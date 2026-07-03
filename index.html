@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Der k-Means-Algorithmus – Interaktives Lernmodul</title>
+<style>
+  :root{
+    --ink:#1e293b; --muted:#64748b; --line:#e2e8f0; --panel:#fff; --bg:#f1f5f9;
+    --teal:#0d9488; --teal-d:#0f766e; --teal-l:#ccfbf1;
+    --blue:#2563eb; --orange:#d97706; --purple:#9333ea; --red:#dc2626; --green:#16a34a;
+    --amber:#f59e0b; --good:#15803d;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.6}
+  header.hero{background:linear-gradient(135deg,#0f172a,#0e4d4a);color:#fff;padding:44px 24px 54px;text-align:center}
+  header.hero h1{margin:0 0 8px;font-size:2rem}
+  header.hero .sub{color:#cbd5e1;max-width:760px;margin:0 auto;font-size:1.02rem}
+  header.hero .meta{margin-top:14px;font-size:.85rem;color:#94a3b8}
+  nav{position:sticky;top:0;z-index:60;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 1px 6px rgba(0,0,0,.05)}
+  nav .wrap{max-width:1060px;margin:0 auto;display:flex;flex-wrap:wrap;gap:3px;padding:7px 14px}
+  nav a{padding:7px 10px;border-radius:7px;text-decoration:none;color:var(--ink);font-weight:600;font-size:.82rem}
+  nav a:hover{background:#f1f5f9}
+  main{max-width:1060px;margin:0 auto;padding:8px 16px 70px}
+  section{background:var(--panel);border-radius:16px;padding:26px 30px;margin:22px 0;box-shadow:0 4px 18px rgba(15,23,42,.06);border-top:5px solid var(--teal)}
+  h2{font-size:1.5rem;margin:.1em 0 .5em;display:flex;align-items:center;gap:12px}
+  h2 .n{display:inline-flex;min-width:36px;height:36px;padding:0 8px;border-radius:10px;align-items:center;justify-content:center;background:var(--teal);color:#fff;font-size:1rem}
+  h3{font-size:1.16rem;margin:1.3em 0 .4em;color:var(--teal-d)}
+  h4{margin:1.1em 0 .3em}
+  p{margin:.55em 0}
+  .lead{font-size:1.05rem;color:#334155}
+  .muted{color:var(--muted)}
+  ul,ol{margin:.4em 0 .9em}
+  li{margin:.25em 0}
+  .formula{font-family:'Cambria Math','Times New Roman',Georgia,serif;font-size:1.12rem;background:#f8fafc;border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:8px;padding:12px 16px;margin:12px 0;text-align:center;overflow-x:auto}
+  .formula i{font-style:italic}
+  .frac{display:inline-block;vertical-align:-0.6em;text-align:center;margin:0 .12em}
+  .frac>span{display:block;padding:0 .35em}
+  .frac .num{border-bottom:1.4px solid currentColor}
+  .ex{background:#fffdf5;border:1px solid #e7d9a6;border-left:5px solid var(--amber);border-radius:10px;padding:16px 18px;margin:18px 0}
+  .ex .tag{display:inline-block;background:var(--amber);color:#fff;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:6px;letter-spacing:.4px;margin-bottom:8px}
+  .ex .q{font-weight:600;margin-bottom:8px}
+  .ex textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;resize:vertical}
+  .ex input.num{width:70px;border:1px solid var(--line);border-radius:6px;padding:5px 7px;font:inherit;text-align:center}
+  .ex .reveal{margin-top:10px;background:var(--teal);color:#fff;border:none;border-radius:8px;padding:9px 15px;font:inherit;font-weight:600;cursor:pointer}
+  .ex .reveal:disabled{opacity:.4;cursor:not-allowed}
+  .ex .hintline{font-size:.82rem;color:var(--muted);margin-top:6px}
+  .ex .solution{margin-top:14px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:12px 15px}
+  .ex .solution h5{margin:.1em 0 .4em;color:var(--good);font-size:.95rem}
+  table.tbl{border-collapse:collapse;margin:10px 0;font-size:.93rem}
+  table.tbl th,table.tbl td{border:1px solid var(--line);padding:6px 10px;text-align:center}
+  table.tbl th{background:#f8fafc}
+  .demo{border:1px solid var(--line);border-radius:14px;padding:16px;margin:18px 0;background:#fcfefe}
+  .demo h4{margin-top:0;display:flex;align-items:center;gap:8px}
+  .badge{font-size:.68rem;font-weight:700;color:#fff;background:var(--teal);padding:2px 8px;border-radius:6px;letter-spacing:.4px}
+  .demo-grid{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start}
+  @media(max-width:820px){.demo-grid{grid-template-columns:1fr}}
+  canvas{background:#fff;border:1px solid var(--line);border-radius:10px;touch-action:none;max-width:100%}
+  .ctrl{display:flex;flex-direction:column;gap:9px;min-width:230px}
+  .row{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+  button{font:inherit;font-weight:600;border:none;border-radius:8px;padding:8px 12px;cursor:pointer;background:#475569;color:#fff;transition:.15s}
+  button:hover{filter:brightness(1.1)}
+  button:disabled{opacity:.4;cursor:not-allowed;filter:none}
+  button.p{background:var(--teal)} button.o{background:var(--orange)} button.ghost{background:#e2e8f0;color:#334155}
+  select,input[type=range]{font:inherit}
+  select{padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:#fff}
+  label.sl{font-size:.88rem;display:flex;flex-direction:column;gap:2px}
+  label.ck{font-size:.86rem;display:flex;gap:6px;align-items:center}
+  input[type=range]{width:100%}
+  .readout{background:#0f172a;color:#e2e8f0;border-radius:8px;padding:9px 12px;font-family:'Consolas',monospace;font-size:.82rem;white-space:pre-wrap;line-height:1.45}
+  .hint{font-size:.83rem;color:var(--muted)}
+  .tip{background:var(--teal-l);border-radius:10px;padding:12px 15px;margin:12px 0;font-size:.96rem}
+  .warn{background:#fef2f2;border-left:4px solid var(--red);border-radius:8px;padding:10px 14px;margin:12px 0;font-size:.95rem}
+  .exkurs{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:14px 16px;margin:14px 0}
+  .exkurs h4{margin-top:0;color:var(--purple)}
+  pre.code{background:#0f172a;color:#e2e8f0;border-radius:10px;padding:14px 16px;overflow-x:auto;font-family:'Consolas',monospace;font-size:.85rem;line-height:1.5}
+  pre.code .c{color:#7dd3fc}
+  .legend{font-size:.83rem;display:flex;gap:12px;flex-wrap:wrap;margin-top:4px}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+  footer{text-align:center;color:var(--muted);font-size:.83rem;padding:26px 16px 50px}
+  .kbd{font-family:'Consolas',monospace;background:#f1f5f9;padding:1px 6px;border-radius:5px;font-size:.9em}
+</style>
+</head>
+<body>
+<header class="hero">
+  <h1>Der k-Means-Algorithmus</h1>
+  <div class="sub">Ein interaktives Lernmodul zum unüberwachten maschinellen Lernen: vom Fisch-Szenario über die Mathematik hinter Abstand und Schwerpunkt bis zu Ellbogen-/Silhouettenanalyse, Grenzen des Verfahrens, Implementierung und Farbreduktion.</div>
+  <div class="meta">Jahrgangsstufe 13 · nach dem ISB-Arbeitsheft „Der k-Means-Algorithmus" (Pfeffer · Reitmaier · Fuchs · Gräßl, KI@Informatik13) · Simulationen inspiriert von der Software kaMin</div>
+</header>
+
+<nav><div class="wrap">
+  <a href="#ziele">Lernziele</a>
+  <a href="#setting">1 Setting</a>
+  <a href="#anschaulich">2 Algorithmus</a>
+  <a href="#abstand">3 Abstand</a>
+  <a href="#schwerpunkt">4 Schwerpunkt</a>
+  <a href="#wcss">5 WCSS</a>
+  <a href="#k">6 Wahl von k</a>
+  <a href="#silhouette">7 Silhouette</a>
+  <a href="#grenzen">8 Grenzen</a>
+  <a href="#implementierung">9 Implementierung</a>
+  <a href="#farbe">10 Farbreduktion</a>
+  <a href="#terminierung">11 Terminierung</a>
+</div></nav>
+
+<main>
+
+<!-- LERNZIELE -->
+<section id="ziele">
+  <h2>Lernziele</h2>
+  <p class="lead">Nach diesem Modul kannst du …</p>
+  <ul>
+    <li>die Funktionsweise des k-Means-Algorithmus als Beispiel <strong>unüberwachten Lernens</strong> beschreiben und für ein Beispiel durchführen;</li>
+    <li>den <strong>quadratischen Abstand</strong> und den <strong>geometrischen Schwerpunkt</strong> berechnen und ihre Rolle im Algorithmus erklären;</li>
+    <li>für verschiedene Eingabedaten beurteilen, welche Ergebnisse k-Means <strong>in Abhängigkeit von k</strong> liefert (Ellbogen- und Silhouettenanalyse);</li>
+    <li>Grenzen und Einflussfaktoren (Startzentren, Ausreißer, Clusterform) benennen und den Algorithmus <strong>implementieren</strong>.</li>
+  </ul>
+  <div class="tip">💡 <strong>So arbeitest du:</strong> Lies jeden Abschnitt, probiere die interaktiven Labore aus und bearbeite die Arbeitsaufträge. Die Musterlösung lässt sich jeweils erst öffnen, wenn du selbst einen Teil deiner Lösung eingetragen hast.</div>
+</section>
+
+<!-- 1 SETTING -->
+<section id="setting">
+  <h2><span class="n">1</span> Das Setting: Unterwasserwelt im Tierpark</h2>
+  <p class="lead">Ein Tierpark plant eine Unterwasserwelt mit vielen Aquarien. Für jede Fischart wurden aus dem natürlichen Lebensraum <strong>Wassertemperatur</strong> (in °C) und <strong>pH-Wert</strong> erhoben. Kleinere Abweichungen sind unproblematisch. Gesucht: Wie viele Aquarien braucht man und welche Fische passen zusammen?</p>
+  <p>Weil vorab <em>keine</em> Beschriftung vorliegt (wir wissen nicht, welcher Fisch in welches Aquarium gehört), ist das eine Aufgabe für ein <strong>unüberwachtes Lernverfahren</strong> – den k-Means-Algorithmus. Jeder Fisch ist ein Datenpunkt (Temperatur | pH). Augenscheinlich zerfallen die Daten in <strong>drei Gruppen (Cluster)</strong>.</p>
+  <div class="demo">
+    <h4><span class="badge">DATEN</span> Der Fisch-Datensatz</h4>
+    <div class="demo-grid">
+      <canvas id="setCanvas" width="470" height="380"></canvas>
+      <div class="ctrl">
+        <p class="hint">Jeder Punkt ist ein Fisch: waagerecht die Temperatur, senkrecht der pH-Wert. Fahre mit der Maus über einen Punkt, um seine Werte zu sehen.</p>
+        <label class="ck"><input type="checkbox" id="setHull" checked> Gruppen andeuten</label>
+        <div class="readout" id="setOut">Bewege die Maus über die Punkte …</div>
+      </div>
+    </div>
+  </div>
+  <div class="ex" data-min="20">
+    <span class="tag">ARBEITSAUFTRAG 1</span>
+    <div class="q">Bestimme für die drei Aquarien (Cluster) jeweils einen bestmöglichen Wert für Temperatur und pH-Wert und erläutere dein Vorgehen.</div>
+    <textarea placeholder="Deine Antwort (z. B. geschätzte Mittelpunkte der drei Gruppen und Begründung) …"></textarea>
+    <div class="hintline">Die Lösung lässt sich öffnen, sobald du etwas eingetragen hast.</div>
+    <button class="reveal" disabled>Lösung anzeigen</button>
+    <div class="solution" hidden>
+      <h5>Musterlösung</h5>
+      <p>Man wählt für jedes Aquarium ungefähr den <em>Mittelpunkt</em> der jeweiligen Punktwolke, weil dieser die Gruppe am besten repräsentiert und die Abweichungen aller Fische zum Aquariumswert klein hält. Für den gezeigten Datensatz ergeben sich als Schätzwerte etwa: Cluster 1 ≈ (13&nbsp;°C | pH&nbsp;7), Cluster 2 ≈ (20&nbsp;°C | pH&nbsp;4), Cluster 3 ≈ (26&nbsp;°C | pH&nbsp;9). Genau dieses „Mittelpunkt-Prinzip" berechnet der k-Means-Algorithmus systematisch – das siehst du in den nächsten Abschnitten.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 2 ANSCHAULICH -->
+<section id="anschaulich">
+  <h2><span class="n">2</span> Der k-Means-Algorithmus anschaulich</h2>
+  <p>Im Namen steckt alles: <strong>k</strong> = Anzahl der Cluster, <strong>Means</strong> = die Mittelwerte (die Cluster-Zentren). Der Algorithmus läuft in Schritten ab:</p>
+  <h3>Schritt 0 – Wahl des Hyperparameters k</h3>
+  <p>Zuerst legt man fest, wie viele Cluster gebildet werden sollen. <i>k</i> ist ein <strong>Hyperparameter</strong>. Bei unserem Datensatz wählt man aufgrund der Struktur <i>k</i> = 3.</p>
+  <h3>Schritt 1 – Initialisieren der Cluster-Zentren</h3>
+  <p>Es werden zufällig <i>k</i> Datenpunkte als <strong>Start-Zentren</strong> ausgewählt.</p>
+  <h3>Schritt 2 – Zuordnen der Datenpunkte</h3>
+  <p>Jeder Punkt <i>P</i> wird dem Cluster-Zentrum zugeordnet, zu dem sein <strong>Abstand am kleinsten</strong> ist. Dadurch entstehen die Cluster. Die farbigen Flächen, die zeigen welcher beliebige Punkt zu welchem Zentrum gehört, heißen <strong>Decision Areas</strong>.</p>
+  <div class="exkurs">
+    <h4>Exkurs · Decision Areas</h4>
+    <p>Decision Areas (Entscheidungsbereiche) sind Regionen im Merkmalsraum, die einem Cluster zugeordnet werden. Bei k-Means entstehen sie, indem jeder Punkt der Ebene dem nächstgelegenen Zentrum zugeschlagen wird. Die Trennlinien (Decision Boundaries) verlaufen genau auf den Mittelsenkrechten zwischen zwei Zentren – es ergibt sich ein <strong>Voronoi-Diagramm</strong>. Aktiviere unten „Decision Areas", um sie zu sehen.</p>
+  </div>
+  <h3>Schritt 3 – Anpassen der Cluster-Zentren</h3>
+  <p>Jedes Zentrum wird an den <strong>geometrischen Schwerpunkt</strong> (den „Mittelpunkt") seiner zugeordneten Punkte verschoben. Die neuen Zentren sind meist keine Datenpunkte mehr.</p>
+  <h3>Iterative Wiederholung von Schritt 2 und 3</h3>
+  <p>Weil sich die Zentren verschoben haben, können Punkte nun einem anderen Zentrum näher sein. Man wiederholt Zuordnen (2) und Anpassen (3), <strong>bis sich die Zuordnung nicht mehr ändert</strong>.</p>
+
+  <div class="demo">
+    <h4><span class="badge">LABOR</span> k-Means Schritt für Schritt (mit Decision Areas)</h4>
+    <div id="lab1"></div>
+  </div>
+
+  <div class="ex" data-min="30">
+    <span class="tag">ARBEITSAUFTRAG 2</span>
+    <div class="q">Formuliere den k-Means-Algorithmus in eigenen Worten oder als Pseudocode.</div>
+    <textarea placeholder="Dein Pseudocode / deine Beschreibung …" style="min-height:110px"></textarea>
+    <div class="hintline">Freischaltung nach eigener Eingabe.</div>
+    <button class="reveal" disabled>Lösung anzeigen</button>
+    <div class="solution" hidden>
+      <h5>Musterlösung (Pseudocode)</h5>
+      <pre class="code">wähle k                                  <span class="c"># Schritt 0</span>
+initialisiere k Zentren zufällig aus den Daten   <span class="c"># Schritt 1</span>
+wiederhole:
+    <span class="c"># Schritt 2 – Zuordnen</span>
+    für jeden Datenpunkt P:
+        ordne P dem Zentrum mit kleinstem Abstand zu
+    <span class="c"># Schritt 3 – Anpassen</span>
+    für jedes Cluster:
+        setze das Zentrum auf den Schwerpunkt (Mittelwert) seiner Punkte
+bis sich keine Zuordnung mehr ändert
+gib Zentren und Zuordnung zurück</pre>
+    </div>
+  </div>
+</section>
+
+<!-- 3 ABSTAND -->
+<section id="abstand">
+  <h2><span class="n">3</span> Vertiefung: der Abstand (Schritt 2)</h2>
+  <p>Für die Zuordnung braucht man ein Abstandsmaß. k-Means verwendet den <strong>quadrierten euklidischen Abstand</strong> (kurz: quadratischer Abstand). Für zwei Punkte <i>P</i> = (<i>p</i><sub>1</sub> | <i>p</i><sub>2</sub>) und ein Zentrum <i>C</i> = (<i>c</i><sub>1</sub> | <i>c</i><sub>2</sub>) gilt:</p>
+  <div class="formula"><i>d</i><sup>2</sup>(<i>P</i>,<i>C</i>) = (<i>c</i><sub>1</sub> − <i>p</i><sub>1</sub>)<sup>2</sup> + (<i>c</i><sub>2</sub> − <i>p</i><sub>2</sub>)<sup>2</sup></div>
+  <div class="tip"><strong>Warum das Quadrat statt der Wurzel?</strong> Für die Frage „welches Zentrum ist am nächsten?" genügt der quadratische Abstand – er ist <em>effizienter</em>, weil das Wurzelziehen entfällt, und die Reihenfolge bleibt gleich (ist 52 &lt; 90, dann auch √52 &lt; √90).</p>
+  <p>Wir arbeiten jetzt mit dem <strong>reduzierten Fisch-Datensatz</strong>: (14|8), (14|6), (23|5), (20|4), (23|3). Die Daten zerfallen sichtbar in zwei Cluster, daher <i>k</i> = 2. Start-Zentren: <i>a</i> = (20|4) für Cluster A, <i>b</i> = (23|5) für Cluster B.</p>
+  <h4>Beispiel: Zuordnung von P = (14|8)</h4>
+  <ul>
+    <li>quadratischer Abstand zu <i>a</i>: (20−14)² + (4−8)² = 36 + 16 = <strong>52</strong></li>
+    <li>quadratischer Abstand zu <i>b</i>: (23−14)² + (5−8)² = 81 + 9 = <strong>90</strong></li>
+  </ul>
+  <p>Da 52 &lt; 90, wird <i>P</i> dem <strong>Cluster A</strong> zugeordnet.</p>
+
+  <div class="demo">
+    <h4><span class="badge">RECHNER</span> Quadratischen Abstand selbst prüfen</h4>
+    <div class="demo-grid">
+      <canvas id="distCanvas" width="470" height="360"></canvas>
+      <div class="ctrl">
+        <p class="hint">Ziehe den Punkt <b>P</b> oder die Zentren <b>a</b>/<b>b</b>. Der Rechner zeigt beide quadratischen Abstände und das gewählte Cluster.</p>
+        <div class="readout" id="distOut">…</div>
+        <button class="ghost" id="distReset">Beispiel P = (14|8)</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex" data-min="8">
+    <span class="tag">ARBEITSAUFTRAG 3</span>
+    <div class="q">Bestimme die Zuordnung der verbleibenden Datenpunkte (14|6), (23|5), (20|4), (23|3) zu den Zentren <i>a</i> = (20|4) und <i>b</i> = (23|5). Trage jeweils die quadratischen Abstände ein und notiere das Cluster (A/B).</div>
+    <table class="tbl">
+      <thead><tr><th>Punkt</th><th>d² zu a=(20|4)</th><th>d² zu b=(23|5)</th><th>Cluster</th></tr></thead>
+      <tbody>
+        <tr><td>(14|6)</td><td><input class="num" placeholder="?"></td><td><input class="num" placeholder="?"></td><td><input class="num" style="width:44px" placeholder="A/B"></td></tr>
+        <tr><td>(23|5)</td><td><input class="num" placeholder="?"></td><td><input class="num" placeholder="?"></td><td><input class="num" style="width:44px" placeholder="A/B"></td></tr>
+        <tr><td>(20|4)</td><td><input class="num" placeholder="?"></td><td><input class="num" placeholder="?"></td><td><input class="num" style="width:44px" placeholder="A/B"></td></tr>
+        <tr><td>(23|3)</td><td><input class="num" placeholder="?"></td><td><input class="num" placeholder="?"></td><td><input class="num" style="width:44px" placeholder="A/B"></td></tr>
+      </tbody>
+    </table>
+    <div class="hintline">Freischaltung, sobald du einige Felder ausgefüllt hast.</div>
+    <button class="reveal" disabled>Lösung anzeigen</button>
+    <div class="solution" hidden>
+      <h5>Musterlösung</h5>
+      <table class="tbl">
+        <thead><tr><th>Punkt</th><th>d² zu a</th><th>d² zu b</th><th>Cluster</th></tr></thead>
+        <tbody>
+          <tr><td>(14|6)</td><td>(20−14)²+(4−6)² = 36+4 = 40</td><td>(23−14)²+(5−6)² = 81+1 = 82</td><td><b>A</b></td></tr>
+          <tr><td>(23|5)</td><td>(20−23)²+(4−5)² = 9+1 = 10</td><td>0+0 = 0</td><td><b>B</b></td></tr>
+          <tr><td>(20|4)</td><td>0+0 = 0</td><td>(23−20)²+(5−4)² = 9+1 = 10</td><td><b>A</b></td></tr>
+          <tr><td>(23|3)</td><td>(20−23)²+(4−3)² = 9+1 = 10</td><td>(23−23)²+(5−3)² = 0+4 = 4</td><td><b>B</b></td></tr>
+        </tbody>
+      </table>
+      <p>Zusammen mit P=(14|8): <b>A = {(14|8), (14|6), (20|4)}</b> und <b>B = {(23|5), (23|3)}</b>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 4 SCHWERPUNKT -->
+<section id="schwerpunkt">
+  <h2><span class="n">4</span> Vertiefung: der Schwerpunkt (Schritt 3)</h2>
+  <p>Ein Zentrum soll sein Cluster optimal repräsentieren – es liegt daher im <strong>geometrischen Schwerpunkt</strong> („Mittelpunkt") der zugeordneten Punkte. Nach einer Neuzuordnung stimmt das oft nicht mehr, also berechnet man den Schwerpunkt neu.</p>
+  <div class="exkurs">
+    <h4>Exkurs · Geometrischer Schwerpunkt</h4>
+    <p>Der Schwerpunkt einer Punktmenge <i>P</i> = {<i>p</i><sub>1</sub>, …, <i>p</i><sub>n</sub>} mit <i>p<sub>i</sub></i> = (<i>x<sub>i</sub></i> | <i>y<sub>i</sub></i>) ist</p>
+    <div class="formula"><i>S</i> = ( <span class="frac"><span class="num">1</span><span><i>n</i></span></span> <span style="font-size:1.15em">Σ</span> <i>x<sub>i</sub></i> &nbsp;|&nbsp; <span class="frac"><span class="num">1</span><span><i>n</i></span></span> <span style="font-size:1.15em">Σ</span> <i>y<sub>i</sub></i> )</div>
+    <p>Für jede Achse wird also der <em>Mittelwert</em> der Koordinaten gebildet. Der Schwerpunkt liegt damit stets im Zentrum der Verteilung.</p>
+  </div>
+  <h4>Beispiel: neues Zentrum a für A = {(14|6), (14|8), (20|4)}</h4>
+  <div class="formula"><i>x</i><sub>neu</sub> = <span class="frac"><span class="num">1</span><span>3</span></span>·(14+14+20) = 16 &nbsp;&nbsp;,&nbsp;&nbsp; <i>y</i><sub>neu</sub> = <span class="frac"><span class="num">1</span><span>3</span></span>·(6+8+4) = 6</div>
+  <p>Das Zentrum wird auf <i>a</i> = (16 | 6) aktualisiert.</p>
+
+  <div class="ex" data-min="6">
+    <span class="tag">ARBEITSAUFTRAG 4</span>
+    <div class="q">Berechne nach demselben Vorgehen die Koordinaten des neuen Cluster-Zentrums <i>b</i> für den Cluster B = {(23|5), (23|3)}.</div>
+    <div class="row"><span>b = (&nbsp;</span><input class="num" placeholder="x"><span>&nbsp;|&nbsp;</span><input class="num" placeholder="y"><span>&nbsp;)</span></div>
+    <div class="hintline">Freischaltung nach Eingabe.</div>
+    <button class="reveal" disabled>Lösung anzeigen</button>
+    <div class="solution" hidden>
+      <h5>Musterlösung</h5>
+      <p><i>x</i><sub>neu</sub> = ½·(23+23) = 23 &nbsp;,&nbsp; <i>y</i><sub>neu</sub> = ½·(5+3) = 4. &nbsp;→ <b>b = (23 | 4)</b>.</p>
+    </div>
+  </div>
+
+  <div class="ex" data-min="25">
+    <span class="tag">ARBEITSAUFTRAG 5</span>
+    <div class="q">Bestimme durch weiteres Iterieren (Zuordnen ↔ Anpassen) die finalen Cluster und ihre Zentren. Woran erkennst du, dass die finalen Zentren gefunden wurden?</div>
+    <textarea placeholder="Rechne die nächste Iteration und beschreibe das Abbruchkriterium …" style="min-height:90px"></textarea>
+    <div class="hintline">Tipp: Nutze das Labor in Abschnitt 2 (Datensatz „Fische (reduziert)") zur Kontrolle.</div>
+    <button class="reveal" disabled>Lösung anzeigen</button>
+    <div class="solution" hidden>
+      <h5>Musterlösung</h5>
+      <p>Mit den Zentren <i>a</i> = (16|6), <i>b</i> = (23|4) ordnet man neu zu. Dabei wandert (20|4) zu B (Abstand² 20 zu a gegenüber 9 zu b). Es ergibt sich A = {(14|8),(14|6)}, B = {(20|4),(23|5),(23|3)}. Neue Schwerpunkte: <i>a</i> = (14|7), <i>b</i> = (22|4). Ordnet man erneut zu, <strong>ändert sich keine Zuordnung mehr</strong> – der Algorithmus terminiert.</p>
+      <p><b>Finales Ergebnis:</b> A = {(14|8),(14|6)} mit Zentrum (14|7); B = {(20|4),(23|5),(23|3)} mit Zentrum (22|4).</p>
+      <p><b>Erkennungsmerkmal:</b> Die finalen Zentren sind gefunden, wenn ein Zuordnungsschritt <em>keine</em> Punkte mehr in ein anderes Cluster verschiebt (die Zentren bleiben dann konstant).</p>
+    </div>
+  </div>
+</section>
+
+<!-- 5 WCSS -->
+<section id="wcss">
+  <h2><span class="n">5</span> Das Ziel: kleine Fehlerfunktion (WCSS)</h2>
+  <p>Ziel von k-Means ist, die Zentren so zu legen, dass die <strong>Summe der quadrierten Abstände</strong> aller Punkte zu ihrem Zentrum minimal wird. Diese Fehlerfunktion heißt <strong>WCSS</strong> (Within-Cluster Sum of Squares):</p>
+  <div class="formula">WCSS = <span style="font-size:1.2em">Σ</span><sub><i>i</i>=1</sub><sup><i>k</i></sup> &nbsp; <span style="font-size:1.2em">Σ</span><sub><i>x</i> ∈ <i>C<sub>i</sub></i></sub> &nbsp; ‖ <i>x</i> − <i>c<sub>i</sub></i> ‖<sup>2</sup></div>
+  <p>Man berechnet für jedes Cluster die Summe der quadratischen Abstände seiner Punkte zum Zentrum und addiert diese über alle <i>k</i> Cluster. Je kleiner WCSS, desto „kompakter" die Cluster. Im Labor oben wird WCSS live mit angezeigt – beobachte, dass der Wert mit jedem Schritt kleiner wird (oder gleich bleibt), nie größer.</p>
+  <div class="tip">In der praktischen Berechnung heben sich Wurzel (euklidische Distanz) und Quadrat gegenseitig auf – deshalb rechnet man direkt mit quadratischen Abständen.</div>
+</section>
+
+<!-- 6 WAHL VON K / ELLBOGEN -->
+<section id="k">
+  <h2><span class="n">6</span> Die Wahl des Hyperparameters k · Ellbogenanalyse</h2>
+  <p>Die Wahl von <i>k</i> bestimmt die Qualität des Clusterings: zu kleines <i>k</i> übersieht Gruppen, zu großes <i>k</i> zerteilt Gruppen unnötig. Eine Idee: Führe k-Means für viele <i>k</i> aus und betrachte die Fehlerfunktion WCSS.</p>
+
+  <div class="ex" data-min="20">
+    <span class="tag">ARBEITSAUFTRAG 7 · Ellbogenanalyse Teil 1</span>
+    <div class="q">a) Wie verändert sich WCSS, wenn <i>k</i> schrittweise größer wird?<br>b) Wie groß ist WCSS, wenn <i>k</i> gleich der Anzahl aller Datenpunkte ist?<br>c) Warum wählt man <i>k</i> nicht einfach sehr groß?</div>
+    <textarea placeholder="Deine Antworten zu a), b), c) …" style="min-height:100px"></textarea>
+    <button class="reveal" disabled>Lösung anzeigen</button>
+    <div class="solution" hidden>
+      <h5>Musterlösung</h5>
+      <p><b>a)</b> WCSS wird mit steigendem <i>k</i> immer kleiner (monoton fallend), weil die Zentren näher an den Punkten liegen können.</p>
+      <p><b>b)</b> Ist <i>k</i> = Anzahl der Datenpunkte, liegt auf jedem Punkt ein eigenes Zentrum – jeder Abstand ist 0, also <b>WCSS = 0</b>.</p>
+      <p><b>c)</b> Ein sehr großes <i>k</i> liefert zwar kleinen Fehler, aber kein sinnvolles Clustering: Die Gruppen werden künstlich zerteilt (Überanpassung), die Aufteilung verliert ihre Aussagekraft.</p>
+    </div>
+  </div>
+
+  <p>Trägt man WCSS gegen <i>k</i> auf, fällt der Wert zuerst stark und ab einem <strong>„Knick" (Ellbogen)</strong> nur noch schwach. Dieses <i>k</i> wählt man üblicherweise. Probiere es aus:</p>
+  <div class="demo">
+    <h4><span class="badge">LABOR</span> Ellbogen-Diagramm &amp; Distanzenplot (Fisch-Datensatz)</h4>
+    <div class="demo-grid">
+      <canvas id="elbowCanvas" width="470" height="330"></canvas>
+      <div class="ctrl">
+        <p class="hint">Links: WCSS für <i>k</i> = 1…8. Klicke einen Punkt im Diagramm (oder nutze den Regler), um rechts den <b>Distanzenplot</b> für dieses <i>k</i> zu sehen – die Linien sind die Abstände der Punkte zu ihrem Zentrum.</p>
+        <label class="sl">Ausgewähltes k = <span id="elbowKv">3</span>
+          <input type="range" id="elbowK" min="1" max="8" step="1" value="3"></label>
+        <canvas id="elbowPlot" width="230" height="200"></canvas>
+        <div class="readout" id="elbowOut">…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex" data-min="20">
+    <span class="tag">ARBEITSAUFTRAG 8 · Ellbogenanalyse Teil 2</span>
+    <div class="q">Erläutere kurz, weshalb sich WCSS an der Stelle des Ellbogens erstmalig so stark verkleinert und weshalb es sinnvoll ist, genau dieses <i>k</i> zu wählen.</div>
+    <textarea placeholder="Deine Erklärung …" style="min-height:80px"></textarea>
+    <button class="reveal" disabled>Lösung anzeigen</button>
+    <div class="solution" hidden>
+      <h5>Musterlösung</h5>
+      <p>Bis zum Ellbogen fügt jedes zusätzliche Cluster eine <em>echte</em> Gruppe der Daten hinzu; dadurch werden viele große Abstände beseitigt und WCSS fällt stark. Am Ellbogen sind alle natürlichen Gruppen erfasst. Weitere Cluster zerteilen nur noch bestehende Gruppen, was WCSS kaum verringert. Der Ellbogen markiert also das kleinste <i>k</i>, das die Datenstruktur gut abbildet – ein guter Kompromiss zwischen Fehler und Modell­einfachheit. (Für den Fisch-Datensatz liegt der Ellbogen bei <b>k = 3</b>.)</p>
+    </div>
+  </div>
+</section>
+
+<!-- 7 SILHOUETTE -->
+<section id="silhouette">
+  <h2><span class="n">7</span> Der Silhouettenkoeffizient</h2>
+  <p>Ein zweites Maß für die Güte ist die <strong>Silhouette</strong> <i>s</i>(<i>p</i>) ∈ [−1; 1]. Sie wird für jeden Punkt berechnet und gibt an, wie gut er zu seinem Cluster passt:</p>
+  <ul>
+    <li>nahe <strong>1</strong>: passt sehr gut zum eigenen Cluster;</li>
+    <li>um <strong>0</strong>: liegt im Grenzbereich zwischen zwei Clustern;</li>
+    <li><strong>negativ</strong>: würde besser zum Nachbar-Cluster passen.</li>
+  </ul>
+  <div class="exkurs">
+    <h4>Exkurs · Berechnung der Silhouette</h4>
+    <p>Für einen Punkt <i>p</i> betrachtet man sein Cluster und den nächstgelegenen Nachbar-Cluster:</p>
+    <ul>
+      <li><i>a</i>(<i>p</i>): durchschnittlicher Abstand von <i>p</i> zu den Punkten des <em>eigenen</em> Clusters;</li>
+      <li><i>b</i>(<i>p</i>): kleinster durchschnittlicher Abstand von <i>p</i> zu den Punkten eines <em>benachbarten</em> Clusters.</li>
+    </ul>
+    <div class="formula"><i>s</i>(<i>p</i>) = 1 − <span class="frac"><span class="num"><i>a</i>(<i>p</i>)</span><span><i>b</i>(<i>p</i>)</span></span> &nbsp;(falls <i>a</i>&lt;<i>b</i>) &nbsp;;&nbsp; 0 &nbsp;(falls <i>a</i>=<i>b</i>) &nbsp;;&nbsp; <span class="frac"><span class="num"><i>b</i>(<i>p</i>)</span><span><i>a</i>(<i>p</i>)</span></span> − 1 &nbsp;(falls <i>a</i>&gt;<i>b</i>)</div>
+    <p class="muted">Kompakt: <i>s</i>(<i>p</i>) = ( <i>b</i>(<i>p</i>) − <i>a</i>(<i>p</i>) ) / max( <i>a</i>(<i>p</i>), <i>b</i>(<i>p</i>) ).</p>
+  </div>
+  <h4>Drei Fälle (aus dem Arbeitsheft)</h4>
+  <p><b>1. Fall – passt gut (Punkt (1|1), s ≈ 0,7):</b> Der mittlere Abstand zum eigenen (roten) Cluster ist deutlich kleiner als der zum nächsten (blauen) Cluster → positive, hohe Silhouette.</p>
+  <p><b>2. Fall – Grenzbereich (Punkt (7|4), s = 0):</b> Eigener Cluster grün = {(7|4),(7|3)}, Nachbar blau = {(6|4)}. Mittlerer Abstand zum eigenen Rest ist 1 (zu (7|3)), zum Nachbarn ebenfalls 1 (zu (6|4)). Da <i>a</i> = <i>b</i> = 1, ist <i>s</i> = 0.</p>
+  <p><b>3. Fall – falsch platziert (Punkt (4|2.5), s ≈ −0,15):</b> Der mittlere Abstand zum benachbarten (blauen) Cluster ist kleiner als zum eigenen (roten) → negative Silhouette.</p>
+
+  <div class="demo">
+    <h4><span class="badge">LABOR</span> Silhouettenplot (Fisch-Datensatz)</h4>
+    <div class="demo-grid">
+      <canvas id="silScatter" width="300" height="300"></canvas>
+      <div class="ctrl">
+        <label class="sl">k = <span id="silKv">3</span>
+          <input type="range" id="silK" min="2" max="7" step="1" value="3"></label>
+        <canvas id="silBars" width="240" height="230"></canvas>
+        <div class="readout" id="silOut">…</div>
+        <p class="hint">Balken = Silhouette je Punkt, nach Cluster gruppiert. Ein guter Wert von <i>k</i> zeigt überwiegend hohe, gleichmäßige Balken und wenige/keine negativen.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="ex" data-min="20">
+    <span class="tag">ARBEITSAUFTRAG 9</span>
+    <div class="q">Vergleiche die Silhouettenplots für <i>k</i> = 2, 3 und 7 (Regler oben). Erläutere, woran man erkennt, ob das gewählte <i>k</i> eine gute Wahl ist. (Bekannt: <i>k</i> = 3 ist optimal, <i>k</i> = 2 noch annehmbar, <i>k</i> = 7 schlecht.)</div>
+    <textarea placeholder="Deine Beobachtungen …" style="min-height:90px"></textarea>
+    <button class="reveal" disabled>Lösung anzeigen</button>
+    <div class="solution" hidden>
+      <h5>Musterlösung</h5>
+      <p>Ein gutes <i>k</i> erkennt man an <strong>durchgehend hohen, gleichmäßigen Silhouettenwerten</strong> (nahe 1) und einem hohen Mittelwert; es gibt kaum negative Werte. Bei <i>k</i> = 3 ist genau das der Fall. Bei <i>k</i> = 2 sind die Werte noch überwiegend positiv, aber niedriger/ungleichmäßiger (ein Cluster ist zu grob). Bei <i>k</i> = 7 treten viele niedrige und teils negative Werte auf, weil natürliche Gruppen unnötig zerteilt werden – ein Zeichen für ein zu großes <i>k</i>.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 8 GRENZEN -->
+<section id="grenzen">
+  <h2><span class="n">8</span> Einflussfaktoren &amp; Grenzen</h2>
+  <p>Neben <i>k</i> beeinflussen weitere Faktoren das Ergebnis. Das folgende Labor erlaubt verschiedene Datensätze – wähle sie oben aus und experimentiere.</p>
+  <div class="demo">
+    <h4><span class="badge">LABOR</span> Experimentierfeld (Startzentren · Ausreißer · Clusterform)</h4>
+    <div id="lab2"></div>
+  </div>
+
+  <h3>Wahl der Startzentren</h3>
+  <p>Weil die Start-Zentren zufällig sind, kann k-Means je nach Initialisierung in verschiedenen Ergebnissen „hängen bleiben" (lokale Minima).</p>
+  <div class="ex" data-min="20">
+    <span class="tag">ARBEITSAUFTRAG 10</span>
+    <div class="q">Führe (Datensatz „Startzentren", <i>k</i> = 4) den Algorithmus mehrfach mit „Zufällige Startzentren → Bis Ende" aus. Beurteile die Qualität der gefundenen Aufteilungen. Wie gehst du vor, um mit hoher Wahrscheinlichkeit ein gutes Clustering zu erhalten?</div>
+    <textarea placeholder="Deine Beobachtungen und Strategie …" style="min-height:80px"></textarea>
+    <button class="reveal" disabled>Lösung anzeigen</button>
+    <div class="solution" hidden>
+      <h5>Musterlösung</h5>
+      <p>Je nach Startzentren entstehen unterschiedliche Endaufteilungen mit unterschiedlichem WCSS – manche sind gut, andere schlecht (lokale Minima). Strategie: den Algorithmus <strong>mehrfach mit verschiedenen zufälligen Startzentren</strong> ausführen und das Ergebnis mit dem <strong>kleinsten WCSS</strong> auswählen. Das erhöht die Chance, das globale Minimum (bzw. eine gute Lösung) zu finden.</p>
+    </div>
+  </div>
+
+  <h3>Ausreißer</h3>
+  <div class="ex" data-min="20">
+    <span class="tag">ARBEITSAUFTRAG 11</span>
+    <div class="q">Wähle den Datensatz „Fische + Ausreißer" (<i>k</i> = 3). Welche Probleme können die zwei Ausreißer verursachen? Teste deine Vermutung.</div>
+    <textarea placeholder="Vermutung und Beobachtung …" style="min-height:80px"></textarea>
+    <button class="reveal" disabled>Lösung anzeigen</button>
+    <div class="solution" hidden>
+      <h5>Musterlösung</h5>
+      <p>Ausreißer „ziehen" das Cluster-Zentrum stark zu sich, weil sie über den <em>quadrierten</em> Abstand besonders schwer wiegen. Ein Zentrum kann dadurch von der eigentlichen Gruppe weggezogen werden, oder ein Ausreißer bildet mit wenigen Punkten ein verzerrtes Cluster. Die eigentliche Gruppenstruktur wird schlechter abgebildet. Eine Silhouettenanalyse zeigt Ausreißer als Punkte mit <strong>niedriger Silhouette</strong> und hilft, sie zu identifizieren.</p>
+    </div>
+  </div>
+
+  <h3>Grenzen: Form der Cluster</h3>
+  <div class="ex" data-min="15">
+    <span class="tag">ARBEITSAUFTRAG 12</span>
+    <div class="q">Teste die Datensätze „Donut" und „Halbmonde". Beurteile das Ergebnis. Welche Art von Datensätzen kann k-Means <em>nicht</em> sinnvoll aufteilen?</div>
+    <textarea placeholder="Deine Beobachtung …" style="min-height:80px"></textarea>
+    <button class="reveal" disabled>Lösung anzeigen</button>
+    <div class="solution" hidden>
+      <h5>Musterlösung</h5>
+      <p>k-Means teilt den Raum über <strong>gerade Trennlinien</strong> (Voronoi-Grenzen) in konvexe, etwa kugelförmige Bereiche. Bei „Donut" (Ring) und „Halbmonden" (verschränkte Bögen) sind die natürlichen Gruppen aber <strong>nicht konvex / nicht linear trennbar</strong>. k-Means zerschneidet sie quer und findet keine sinnvolle Aufteilung. Fazit: Für nicht-konvexe, ineinander verschlungene oder stark unterschiedlich dichte/große Cluster ist k-Means ungeeignet.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 9 IMPLEMENTIERUNG -->
+<section id="implementierung">
+  <h2><span class="n">9</span> Implementierung des Algorithmus</h2>
+  <p>Im ISB-Arbeitsheft wird der Algorithmus in einem BlueJ-Projekt mit den Klassen <span class="kbd">KMEANS</span> und <span class="kbd">PUNKT</span> umgesetzt. Kernstücke sind die Abstandsberechnung und die Auswahl des nächsten Zentrums (in <span class="kbd">PUNKT</span>) sowie die Aktualisierung der Zentren und die Hauptschleife (in <span class="kbd">KMEANS</span>).</p>
+  <div class="ex" data-min="30">
+    <span class="tag">ARBEITSAUFTRAG 13</span>
+    <div class="q">Implementiere die fehlenden Methoden: den quadratischen Abstand, die Auswahl des nächsten Zentrums, die Aktualisierung der Zentren und die Hauptschleife. Skizziere deinen Code (Java oder Pseudocode).</div>
+    <textarea placeholder="Dein Code / Pseudocode …" style="min-height:120px"></textarea>
+    <div class="hintline">Freischaltung nach eigener Eingabe.</div>
+    <button class="reveal" disabled>Java-Musterlösung anzeigen</button>
+    <div class="solution" hidden>
+      <h5>Musterlösung (Java, kommentiert)</h5>
+      <pre class="code"><span class="c">// ===== Klasse PUNKT =====</span>
+
+<span class="c">// quadratischer euklidischer Abstand zu einem Zentrum z</span>
+public double quadratischerAbstand(Punkt z) {
+    double dx = this.getX() - z.getX();
+    double dy = this.getY() - z.getY();
+    return dx*dx + dy*dy;          <span class="c">// keine Wurzel nötig</span>
+}
+
+<span class="c">// Index des naechstgelegenen Zentrums aus dem Array zentren</span>
+public int naechstesZentrum(Punkt[] zentren) {
+    int best = 0;
+    double min = this.quadratischerAbstand(zentren[0]);
+    for (int i = 1; i < zentren.length; i++) {
+        double d = this.quadratischerAbstand(zentren[i]);
+        if (d < min) { min = d; best = i; }
+    }
+    return best;
+}
+
+<span class="c">// ===== Klasse KMEANS =====</span>
+<span class="c">// Felder: int k; Punkt[] datenpunkte; Punkt[] zentren; int[] zuordnung;</span>
+
+<span class="c">// Schritt 3: Zentren auf den Schwerpunkt ihrer Punkte setzen</span>
+public void aktualisiereZentren() {
+    for (int i = 0; i < k; i++) {
+        double sx = 0, sy = 0; int n = 0;
+        for (int j = 0; j < datenpunkte.length; j++) {
+            if (zuordnung[j] == i) {
+                sx += datenpunkte[j].getX();
+                sy += datenpunkte[j].getY();
+                n++;
+            }
+        }
+        if (n > 0) zentren[i] = new Punkt(sx/n, sy/n);
+    }
+}
+
+<span class="c">// Hauptschleife: Schritt 2 und 3 bis zur Konvergenz</span>
+public void ausfuehren() {
+    boolean geaendert = true;
+    while (geaendert) {
+        geaendert = false;
+        <span class="c">// Schritt 2: Zuordnung</span>
+        for (int j = 0; j < datenpunkte.length; j++) {
+            int neu = datenpunkte[j].naechstesZentrum(zentren);
+            if (neu != zuordnung[j]) { zuordnung[j] = neu; geaendert = true; }
+        }
+        <span class="c">// Schritt 3: nur anpassen, wenn sich etwas geaendert hat</span>
+        if (geaendert) aktualisiereZentren();
+    }
+}</pre>
+      <p class="muted">Die Schleife endet, sobald ein kompletter Zuordnungsdurchlauf keine Änderung mehr bringt (<span class="kbd">geaendert == false</span>) – das ist genau das Abbruchkriterium aus Abschnitt 5.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 10 FARBREDUKTION -->
+<section id="farbe">
+  <h2><span class="n">10</span> Anwendung: Farbreduktion mit k-Means</h2>
+  <p>k-Means eignet sich zur <strong>Bildsegmentierung / Farbreduktion</strong>: Jeder Pixel ist ein Datenpunkt mit den Merkmalen (Rot, Grün, Blau). Der Algorithmus gruppiert ähnliche Farben in <i>k</i> Cluster; anschließend wird jeder Pixel durch den <strong>repräsentativen Farbwert</strong> (das Cluster-Zentrum) ersetzt. So lässt sich ein Bild auf <i>k</i> Farben reduzieren (Kompression).</p>
+  <div class="demo">
+    <h4><span class="badge">LABOR</span> Ein Bild auf k Farben reduzieren</h4>
+    <div class="demo-grid">
+      <div>
+        <div class="row">
+          <div><div class="hint">Original</div><canvas id="imgOrig" width="220" height="180"></canvas></div>
+          <div><div class="hint">Reduziert (k Farben)</div><canvas id="imgRed" width="220" height="180"></canvas></div>
+        </div>
+        <div id="palette" class="row" style="margin-top:8px"></div>
+      </div>
+      <div class="ctrl">
+        <label class="sl">Anzahl Farben k = <span id="imgKv">4</span>
+          <input type="range" id="imgK" min="2" max="16" step="1" value="4"></label>
+        <div class="row"><button class="p" id="imgRun">Farbreduktion berechnen</button></div>
+        <div class="row">
+          <button class="ghost" id="imgSample">Beispielbild</button>
+          <label class="ghost" style="padding:8px 12px;border-radius:8px;cursor:pointer;background:#e2e8f0;color:#334155">Eigenes Bild…<input type="file" id="imgFile" accept="image/*" hidden></label>
+        </div>
+        <div class="readout" id="imgOut">…</div>
+        <p class="hint">Die Farbfelder unten zeigen die <i>k</i> gefundenen Cluster-Zentren – genau die Farben, auf die das Bild reduziert wurde.</p>
+      </div>
+    </div>
+  </div>
+  <div class="ex" data-min="20">
+    <span class="tag">ARBEITSAUFTRAG 14</span>
+    <div class="q">Erläutere, inwiefern k-Means zur Farbreduktion dient: Welche Datenpunkte mit welchen Merkmalen werden verwendet und welche Bedeutung haben die Cluster-Zentren? Experimentiere mit verschiedenen <i>k</i>.</div>
+    <textarea placeholder="Deine Erklärung …" style="min-height:90px"></textarea>
+    <button class="reveal" disabled>Lösung anzeigen</button>
+    <div class="solution" hidden>
+      <h5>Musterlösung</h5>
+      <p>Die <strong>Datenpunkte sind die Pixel</strong>, ihre <strong>Merkmale die Farbkanäle (R, G, B)</strong> – jeder Pixel ist also ein Punkt im dreidimensionalen Farbraum. k-Means bildet <i>k</i> Farb-Cluster; jedes <strong>Cluster-Zentrum ist eine repräsentative Farbe</strong>. Beim Ersetzen jedes Pixels durch das Zentrum seines Clusters wird das Bild auf genau diese <i>k</i> Farben reduziert. Kleines <i>k</i> (z. B. 2) trennt grob Hell/Dunkel bzw. Vordergrund/Hintergrund; größeres <i>k</i> erhält mehr Details und nähert sich dem Original an (Bildkompression).</p>
+    </div>
+  </div>
+</section>
+
+<!-- 11 TERMINIERUNG -->
+<section id="terminierung">
+  <h2><span class="n">11</span> Terminierung &amp; optimales Ergebnis</h2>
+  <h3>Terminiert der Algorithmus immer?</h3>
+  <p>Wiederholt wird, bis sich die Zuordnung nicht mehr ändert. Eine Neuzuordnung findet nur statt, wenn ein Punkt einem näheren Zentrum zugeschlagen wird – dadurch wird WCSS <strong>kleiner oder bleibt gleich</strong>, nie größer.</p>
+  <ul>
+    <li><strong>WCSS bleibt gleich:</strong> keine Änderung der Zuordnung → Abbruchbedingung erfüllt, der Algorithmus terminiert.</li>
+    <li><strong>WCSS wird kleiner:</strong> mindestens ein Punkt neu zugeordnet → weiter iterieren.</li>
+  </ul>
+  <p>Für <i>n</i> Datenpunkte und <i>k</i> Cluster gibt es höchstens <strong><i>k<sup>n</sup></i></strong> mögliche Zuordnungen. Da jede Iteration WCSS echt verkleinert (oder terminiert) und es nur endlich viele Zuordnungen gibt, <strong>terminiert k-Means immer nach endlich vielen Schritten</strong> (in der Praxis viel schneller als <i>k<sup>n</sup></i>).</p>
+  <h3>Findet er das optimale Clustering?</h3>
+  <div class="warn"><strong>Nicht garantiert.</strong> k-Means konvergiert gegen ein Minimum der Fehlerfunktion, aber dies kann ein <strong>lokales</strong> statt des <strong>globalen</strong> Minimums sein. Das Finden des globalen Optimums ist sogar <strong>NP-hart</strong>. Die Wahl der Startzentren beeinflusst, welches Minimum gefunden wird – deshalb hilft mehrfaches Ausführen mit verschiedenen Startzentren (vgl. Arbeitsauftrag 10).</p></div>
+  <div class="tip">🎯 <strong>Zusammenfassung:</strong> k-Means = wiederhole „Zuordnen nach kleinstem quadratischen Abstand" und „Zentren auf den Schwerpunkt setzen", bis Stabilität. <i>k</i> wählt man mit Ellbogen-/Silhouettenanalyse. Grenzen: nicht-konvexe Cluster, Ausreißer, Abhängigkeit von den Startzentren.</div>
+</section>
+
+</main>
+
+<footer>
+  Interaktives Lernmodul zum k-Means-Algorithmus · Informatik 13. Klasse.<br>
+  Fachliche Grundlage: ISB-Arbeitsheft „Der k-Means-Algorithmus" (Dr. Wolfgang Pfeffer · Christian Reitmaier · Tobias Fuchs · Christoph Gräßl, KI@Informatik13, CC-BY-NC-SA). Interaktive Elemente nachempfunden an der Software <em>kaMin</em> (kex.fim.uni-passau.de).
+</footer>
+
+<script>
+"use strict";
+/* =====================================================================
+   Gemeinsame Bausteine
+===================================================================== */
+const PAL = ['#0d9488','#d97706','#9333ea','#2563eb','#dc2626','#16a34a','#db2777','#0891b2'];
+function fmt(x,d){ return x.toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function sq(a,b){ const dx=a.x-b.x, dy=a.y-b.y; return dx*dx+dy*dy; }
+function eu(a,b){ return Math.sqrt(sq(a,b)); }
+
+/* deterministischer Zufall (LCG) für reproduzierbare Datensätze */
+function LCG(seed){ let s=seed>>>0; return ()=>{ s=(1664525*s+1013904223)>>>0; return s/4294967296; }; }
+function gauss(rnd){ return (rnd()+rnd()+rnd()-1.5); }
+
+/* ---- k-Means-Kern ---- */
+function assign(points, centers){
+  let changed=false;
+  for(const p of points){ let best=0,bd=Infinity;
+    for(let i=0;i<centers.length;i++){ const d=sq(p,centers[i]); if(d<bd){bd=d;best=i;} }
+    if(p.c!==best){changed=true;p.c=best;} }
+  return changed;
+}
+function update(points, centers){
+  for(let i=0;i<centers.length;i++){ let sx=0,sy=0,n=0;
+    for(const p of points) if(p.c===i){sx+=p.x;sy+=p.y;n++;}
+    if(n>0){centers[i].x=sx/n;centers[i].y=sy/n;} }
+}
+function wcss(points, centers){ let s=0; for(const p of points) if(p.c>=0) s+=sq(p,centers[p.c]); return s; }
+function initCentersFrom(points, k, rnd){
+  const idx=[...points.keys()]; // shuffle
+  for(let i=idx.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [idx[i],idx[j]]=[idx[j],idx[i]]; }
+  const cs=[]; for(let i=0;i<k;i++){ const p=points[idx[i%points.length]]; cs.push({x:p.x,y:p.y}); }
+  return cs;
+}
+function kmeansBest(rawPoints, k, restarts, rnd){
+  let best=null;
+  for(let r=0;r<restarts;r++){
+    const pts=rawPoints.map(p=>({x:p.x,y:p.y,c:-1}));
+    const cs=initCentersFrom(pts,k,rnd);
+    for(let it=0;it<60;it++){ const ch=assign(pts,cs); update(pts,cs); if(!ch) break; }
+    const w=wcss(pts,cs);
+    if(!best||w<best.w) best={w, pts, cs};
+  }
+  return best;
+}
+
+/* =====================================================================
+   Datensätze
+===================================================================== */
+function dsFische(){
+  return [[13,7],[12,8],[14,8],[14,6],[15,7],[13,6],
+          [20,4],[21,5],[23,5],[20,3],[23,3],[22,4],
+          [25,9],[27,9],[26,8],[26,10],[24,9],[27,8]].map(p=>({x:p[0],y:p[1]}));
+}
+function dsFischeReduziert(){ return [[14,8],[14,6],[23,5],[20,4],[23,3]].map(p=>({x:p[0],y:p[1]})); }
+function dsFischeAusreisser(){ return dsFische().concat([{x:6,y:1},{x:30,y:13}]); }
+function dsDonut(){
+  const rnd=LCG(7), pts=[], cx=15, cy=8;
+  for(let i=0;i<40;i++){ const a=rnd()*Math.PI*2, r=6+gauss(rnd)*0.5; pts.push({x:cx+r*Math.cos(a), y:cy+r*Math.sin(a)}); }
+  for(let i=0;i<8;i++){ pts.push({x:cx+gauss(rnd)*0.8, y:cy+gauss(rnd)*0.8}); }
+  return pts;
+}
+function dsHalbmonde(){
+  const rnd=LCG(11), pts=[];
+  for(let i=0;i<28;i++){ const a=Math.PI*(i/27); pts.push({x:9+7*Math.cos(a)+gauss(rnd)*0.5, y:7+7*Math.sin(a)+gauss(rnd)*0.5}); }
+  for(let i=0;i<28;i++){ const a=Math.PI*(i/27); pts.push({x:16+7*Math.cos(a)+gauss(rnd)*0.5, y:11-7*Math.sin(a)+gauss(rnd)*0.5}); }
+  return pts;
+}
+function dsStartzentren(){
+  const rnd=LCG(3), pts=[], b=[[6,6],[6,14],[14,6],[14,14]];
+  for(const c of b) for(let i=0;i<12;i++) pts.push({x:c[0]+gauss(rnd)*1.0, y:c[1]+gauss(rnd)*1.0});
+  return pts;
+}
+const DATASETS = {
+  'Fische (3 Cluster)':      {gen:dsFische, k:3},
+  'Fische (reduziert)':      {gen:dsFischeReduziert, k:2},
+  'Fische + Ausreißer':      {gen:dsFischeAusreisser, k:3},
+  'Startzentren-Demo':       {gen:dsStartzentren, k:4},
+  'Donut':                   {gen:dsDonut, k:2},
+  'Halbmonde':               {gen:dsHalbmonde, k:2},
+};
+
+/* =====================================================================
+   Zeichen-Hilfen (mit Datenbereich-Mapping)
+===================================================================== */
+function bounds(points){
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  for(const p of points){ x0=Math.min(x0,p.x);y0=Math.min(y0,p.y);x1=Math.max(x1,p.x);y1=Math.max(y1,p.y); }
+  const px=(x1-x0)*0.12+1, py=(y1-y0)*0.12+1;
+  return {x0:x0-px,y0:y0-py,x1:x1+px,y1:y1+py};
+}
+function mapper(cv,b,m){
+  m=m||36; const W=cv.width,H=cv.height;
+  return { W,H,m,b,
+    sx:x=> m+(x-b.x0)/(b.x1-b.x0)*(W-2*m),
+    sy:y=> H-m-(y-b.y0)/(b.y1-b.y0)*(H-2*m),
+    ix:px=> b.x0+(px-m)/(W-2*m)*(b.x1-b.x0),
+    iy:py=> b.y0+(H-m-py)/(H-2*m)*(b.y1-b.y0) };
+}
+function axes(ctx,g,xl,yl){
+  ctx.clearRect(0,0,g.W,g.H);
+  ctx.strokeStyle='#eef2f7';ctx.fillStyle='#94a3b8';ctx.font='10px sans-serif';ctx.lineWidth=1;
+  ctx.strokeStyle='#94a3b8';
+  ctx.beginPath();ctx.moveTo(g.m,g.H-g.m);ctx.lineTo(g.W-8,g.H-g.m);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(g.m,g.H-g.m);ctx.lineTo(g.m,8);ctx.stroke();
+  if(xl)ctx.fillText(xl,g.W-90,g.H-g.m+16);
+  if(yl){ctx.save();ctx.translate(12,60);ctx.rotate(-Math.PI/2);ctx.fillText(yl,0,0);ctx.restore();}
+}
+function decisionAreas(ctx,g,centers){
+  const step=7;
+  for(let px=g.m;px<g.W-g.m;px+=step) for(let py=g.m;py<g.H-g.m;py+=step){
+    const x=g.ix(px+step/2), y=g.iy(py+step/2); let best=0,bd=Infinity;
+    for(let i=0;i<centers.length;i++){ const dx=x-centers[i].x,dy=y-centers[i].y,d=dx*dx+dy*dy; if(d<bd){bd=d;best=i;} }
+    ctx.fillStyle=PAL[best]+'22'; ctx.fillRect(px,py,step,step);
+  }
+}
+
+/* =====================================================================
+   1 · Setting-Scatter
+===================================================================== */
+(function(){
+  const cv=document.getElementById('setCanvas'), ctx=cv.getContext('2d');
+  const pts=dsFische(); const g=mapper(cv,bounds(pts));
+  const out=document.getElementById('setOut'), hull=document.getElementById('setHull');
+  const groups=[[0,6,'#0d9488'],[6,12,'#d97706'],[12,18,'#9333ea']];
+  function draw(hi){
+    axes(ctx,g,'Temperatur (°C)','pH-Wert');
+    if(hull.checked){ groups.forEach(gr=>{ ctx.fillStyle=gr[2]+'18';
+      let cx=0,cy=0,n=0; for(let i=gr[0];i<gr[1];i++){cx+=pts[i].x;cy+=pts[i].y;n++;} cx/=n;cy/=n;
+      let rr=0; for(let i=gr[0];i<gr[1];i++) rr=Math.max(rr,eu(pts[i],{x:cx,y:cy}));
+      ctx.beginPath();ctx.arc(g.sx(cx),g.sy(cy),(rr/(g.b.x1-g.b.x0))*(g.W-2*g.m)+16,0,7);ctx.fill(); }); }
+    pts.forEach((p,i)=>{ let col='#334155'; groups.forEach(gr=>{ if(i>=gr[0]&&i<gr[1]) col=gr[2]; });
+      ctx.fillStyle=(hi===i)?'#0f172a':col; ctx.beginPath();ctx.arc(g.sx(p.x),g.sy(p.y),hi===i?8:6,0,7);ctx.fill();
+      ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(g.sx(p.x),g.sy(p.y),2,0,7);ctx.fill(); });
+  }
+  cv.addEventListener('pointermove',e=>{ const r=cv.getBoundingClientRect();
+    const px=(e.clientX-r.left)*(cv.width/r.width), py=(e.clientY-r.top)*(cv.height/r.height);
+    let hi=-1,bd=14; pts.forEach((p,i)=>{const d=Math.hypot(g.sx(p.x)-px,g.sy(p.y)-py); if(d<bd){bd=d;hi=i;}});
+    draw(hi); out.textContent = hi>=0 ? ('Fisch '+(hi+1)+':  Temperatur '+pts[hi].x+' °C,  pH '+pts[hi].y) : 'Bewege die Maus über die Punkte …'; });
+  hull.addEventListener('change',()=>draw(-1));
+  draw(-1);
+})();
+
+/* =====================================================================
+   2 & 8 · Labor-Fabrik
+===================================================================== */
+function createLab(hostId, opts){
+  const host=document.getElementById(hostId);
+  const dsNames=opts.datasets;
+  host.innerHTML =
+   '<div class="demo-grid"><canvas width="470" height="400"></canvas>'
+  +'<div class="ctrl">'
+  +'<label class="sl">Datensatz'
+  +'<select class="ds">'+dsNames.map(n=>'<option'+(n===opts.def?' selected':'')+'>'+n+'</option>').join('')+'</select></label>'
+  +'<label class="sl">k = <span class="kv"></span><input type="range" class="k" min="1" max="6" step="1"></label>'
+  +'<div class="row"><button class="p aa">① Zuordnen</button><button class="o mm" disabled>② Verschieben</button></div>'
+  +'<div class="row"><button class="ghost auto">Auto-Lauf</button><button class="ghost end">Bis Ende</button><button class="ghost reinit">Zufällige Startzentren</button></div>'
+  +'<label class="ck"><input type="checkbox" class="da" checked> Decision Areas</label>'
+  +'<label class="ck"><input type="checkbox" class="dl"> Distanzlinien</label>'
+  +'<div class="readout ro"></div>'
+  +'<div class="legend le"></div>'
+  +'</div></div>';
+  const cv=host.querySelector('canvas'), ctx=cv.getContext('2d');
+  const dsSel=host.querySelector('.ds'), kEl=host.querySelector('.k'), kV=host.querySelector('.kv');
+  const bAA=host.querySelector('.aa'), bMM=host.querySelector('.mm'), bAuto=host.querySelector('.auto');
+  const bEnd=host.querySelector('.end'), bRe=host.querySelector('.reinit');
+  const daEl=host.querySelector('.da'), dlEl=host.querySelector('.dl'), ro=host.querySelector('.ro'), le=host.querySelector('.le');
+  let pts=[], cents=[], g=null, phase='assign', iter=0, converged=false, timer=null, seed=1, msg='';
+
+  function loadDS(){
+    const cfg=DATASETS[dsSel.value];
+    pts=cfg.gen().map(p=>({x:p.x,y:p.y,c:-1}));
+    kEl.value=cfg.k; g=mapper(cv,bounds(pts));
+    reinit();
+  }
+  function reinit(){
+    const k=parseInt(kEl.value); const rnd=LCG(seed++ *2654435761 >>>0 || 1);
+    cents=initCentersFrom(pts,k,rnd); pts.forEach(p=>p.c=-1);
+    iter=0; phase='assign'; converged=false; msg='Bereit – beginne mit ① Zuordnen.'; sync(); draw();
+  }
+  function doAssign(){ const ch=assign(pts,cents);
+    if(!ch && iter>0){ converged=true; msg='Keine Änderung mehr → Algorithmus terminiert.'; }
+    else { phase='move'; msg='① Zuordnen erledigt. Jetzt ② Verschieben.'; }
+    sync(); draw(); }
+  function doMove(){ update(pts,cents); iter++; phase='assign';
+    msg='② Verschieben erledigt (neue Schwerpunkte). Jetzt wieder ① Zuordnen.'; sync(); draw(); }
+  function runEnd(){ for(let i=0;i<80 && !converged;i++){ if(phase==='assign')doAssign(); else doMove(); } }
+  function sync(){
+    kV.textContent=kEl.value;
+    bAA.disabled=(phase!=='assign')||converged; bMM.disabled=(phase!=='move')||converged;
+    le.innerHTML=cents.map((c,i)=>'<span><span class="dot" style="background:'+PAL[i]+'"></span>Cluster '+(i+1)+'</span>').join('');
+  }
+  function draw(){
+    axes(ctx,g);
+    if(daEl.checked) decisionAreas(ctx,g,cents);
+    if(dlEl.checked){ pts.forEach(p=>{ if(p.c<0)return; const c=cents[p.c];
+      ctx.strokeStyle=PAL[p.c]+'88';ctx.lineWidth=1; ctx.beginPath();ctx.moveTo(g.sx(p.x),g.sy(p.y));ctx.lineTo(g.sx(c.x),g.sy(c.y));ctx.stroke(); }); }
+    pts.forEach(p=>{ ctx.fillStyle=p.c<0?'#94a3b8':PAL[p.c]; ctx.globalAlpha=.9;
+      ctx.beginPath();ctx.arc(g.sx(p.x),g.sy(p.y),5,0,7);ctx.fill();ctx.globalAlpha=1; });
+    cents.forEach((c,i)=>{ ctx.strokeStyle=PAL[i];ctx.lineWidth=4;
+      ctx.beginPath();ctx.moveTo(g.sx(c.x)-9,g.sy(c.y)-9);ctx.lineTo(g.sx(c.x)+9,g.sy(c.y)+9);
+      ctx.moveTo(g.sx(c.x)+9,g.sy(c.y)-9);ctx.lineTo(g.sx(c.x)-9,g.sy(c.y)+9);ctx.stroke();
+      ctx.fillStyle='#fff';ctx.strokeStyle='#0f172a';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(g.sx(c.x),g.sy(c.y),3,0,7);ctx.fill();ctx.stroke(); });
+    const w=wcss(pts,cents);
+    ro.textContent='Iteration: '+iter+'   k = '+cents.length+'\nnächster Schritt: '+(converged?'— (terminiert)':(phase==='assign'?'① Zuordnen':'② Verschieben'))
+      +'\nWCSS: '+fmt(w,1)+'\n'+msg;
+  }
+  bAA.onclick=doAssign; bMM.onclick=doMove; bEnd.onclick=runEnd; bRe.onclick=reinit;
+  dsSel.onchange=()=>{ if(timer){clearInterval(timer);timer=null;bAuto.textContent='Auto-Lauf';} loadDS(); };
+  kEl.oninput=()=>{ reinit(); };
+  daEl.onchange=draw; dlEl.onchange=draw;
+  bAuto.onclick=function(){ if(timer){clearInterval(timer);timer=null;this.textContent='Auto-Lauf';return;}
+    const b=this;b.textContent='Stopp'; timer=setInterval(()=>{ if(converged){clearInterval(timer);timer=null;b.textContent='Auto-Lauf';return;}
+      if(phase==='assign')doAssign(); else doMove(); },700); };
+  loadDS();
+}
+createLab('lab1',{datasets:['Fische (3 Cluster)','Fische (reduziert)'],def:'Fische (3 Cluster)'});
+createLab('lab2',{datasets:['Startzentren-Demo','Fische + Ausreißer','Donut','Halbmonde','Fische (3 Cluster)'],def:'Startzentren-Demo'});
+
+/* =====================================================================
+   3 · Distanz-Rechner
+===================================================================== */
+(function(){
+  const cv=document.getElementById('distCanvas'), ctx=cv.getContext('2d');
+  const b={x0:11,y0:1,x1:26,y1:10}; const g=mapper(cv,b,34);
+  const P={x:14,y:8,color:'#2563eb',name:'P'}, a={x:20,y:4,color:'#0d9488',name:'a'}, bb={x:23,y:5,color:'#d97706',name:'b'};
+  const out=document.getElementById('distOut');
+  function draw(){
+    axes(ctx,g,'Temp','pH');
+    const da=sq(P,a), db=sq(P,bb), nearer=da<=db?a:bb;
+    [[a,da],[bb,db]].forEach(([c,d])=>{ ctx.strokeStyle=c===nearer?c.color:'#cbd5e1'; ctx.lineWidth=c===nearer?3:1.6;
+      ctx.setLineDash(c===nearer?[]:[5,5]); ctx.beginPath();ctx.moveTo(g.sx(P.x),g.sy(P.y));ctx.lineTo(g.sx(c.x),g.sy(c.y));ctx.stroke(); });
+    ctx.setLineDash([]);
+    [a,bb].forEach(c=>{ ctx.strokeStyle=c.color;ctx.lineWidth=4;
+      ctx.beginPath();ctx.moveTo(g.sx(c.x)-8,g.sy(c.y)-8);ctx.lineTo(g.sx(c.x)+8,g.sy(c.y)+8);
+      ctx.moveTo(g.sx(c.x)+8,g.sy(c.y)-8);ctx.lineTo(g.sx(c.x)-8,g.sy(c.y)+8);ctx.stroke();
+      ctx.fillStyle=c.color;ctx.font='bold 12px sans-serif';ctx.fillText(c.name+' ('+c.x+'|'+c.y+')',g.sx(c.x)+10,g.sy(c.y)-9); });
+    ctx.fillStyle=P.color;ctx.beginPath();ctx.arc(g.sx(P.x),g.sy(P.y),8,0,7);ctx.fill();
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(g.sx(P.x),g.sy(P.y),3,0,7);ctx.fill();
+    ctx.fillStyle=P.color;ctx.font='bold 13px sans-serif';ctx.fillText('P ('+P.x+'|'+P.y+')',g.sx(P.x)+10,g.sy(P.y)+18);
+    out.textContent='d²(P,a) = ('+a.x+'−'+P.x+')² + ('+a.y+'−'+P.y+')² = '+((a.x-P.x)**2)+' + '+((a.y-P.y)**2)+' = '+da
+      +'\nd²(P,b) = ('+bb.x+'−'+P.x+')² + ('+bb.y+'−'+P.y+')² = '+((bb.x-P.x)**2)+' + '+((bb.y-P.y)**2)+' = '+db
+      +'\n→ P gehört zu Cluster '+(da<=db?'A (Zentrum a)':'B (Zentrum b)');
+  }
+  let drag=null;
+  cv.addEventListener('pointerdown',e=>{ const r=cv.getBoundingClientRect();
+    const px=(e.clientX-r.left)*(cv.width/r.width), py=(e.clientY-r.top)*(cv.height/r.height);
+    [P,a,bb].forEach(pt=>{ if(Math.hypot(g.sx(pt.x)-px,g.sy(pt.y)-py)<15) drag=pt; }); });
+  cv.addEventListener('pointermove',e=>{ if(!drag)return; const r=cv.getBoundingClientRect();
+    const px=(e.clientX-r.left)*(cv.width/r.width), py=(e.clientY-r.top)*(cv.height/r.height);
+    drag.x=Math.max(b.x0+.5,Math.min(b.x1-.5,Math.round(g.ix(px)))); drag.y=Math.max(b.y0+.5,Math.min(b.y1-.5,Math.round(g.iy(py)))); draw(); });
+  cv.addEventListener('pointerup',()=>drag=null); cv.addEventListener('pointerleave',()=>drag=null);
+  document.getElementById('distReset').onclick=()=>{P.x=14;P.y=8;a.x=20;a.y=4;bb.x=23;bb.y=5;draw();};
+  draw();
+})();
+
+/* =====================================================================
+   6 · Ellbogenanalyse
+===================================================================== */
+(function(){
+  const cv=document.getElementById('elbowCanvas'), ctx=cv.getContext('2d');
+  const pcv=document.getElementById('elbowPlot'), pctx=pcv.getContext('2d');
+  const raw=dsFische(); const rnd=LCG(42);
+  const KMAX=8; const results=[]; for(let k=1;k<=KMAX;k++) results.push(kmeansBest(raw,k,6,rnd));
+  const wvals=results.map(r=>r.w); const wmax=Math.max(...wvals);
+  const kEl=document.getElementById('elbowK'), kV=document.getElementById('elbowKv'), out=document.getElementById('elbowOut');
+  const gx=k=>40+(k-1)/(KMAX-1)*(cv.width-60);
+  const gy=w=>cv.height-34-(w/wmax)*(cv.height-60);
+  function drawElbow(sel){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.strokeStyle='#94a3b8';ctx.fillStyle='#64748b';ctx.font='11px sans-serif';
+    ctx.beginPath();ctx.moveTo(40,10);ctx.lineTo(40,cv.height-34);ctx.lineTo(cv.width-16,cv.height-34);ctx.stroke();
+    ctx.fillText('k →',cv.width-40,cv.height-16); ctx.save();ctx.translate(14,60);ctx.rotate(-Math.PI/2);ctx.fillText('WCSS',0,0);ctx.restore();
+    ctx.strokeStyle='#0d9488';ctx.lineWidth=2.5;ctx.beginPath();
+    results.forEach((r,i)=>{ const x=gx(i+1),y=gy(r.w); i?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.stroke();
+    results.forEach((r,i)=>{ const k=i+1,x=gx(k),y=gy(r.w);
+      ctx.fillStyle=k===sel?'#dc2626':'#0d9488'; ctx.beginPath();ctx.arc(x,y,k===sel?7:5,0,7);ctx.fill();
+      ctx.fillStyle='#64748b';ctx.fillText(k,x-3,cv.height-18); });
+    // Ellbogen bei k=3 markieren
+    ctx.strokeStyle='#dc262688';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(gx(3),gy(results[2].w));ctx.lineTo(gx(3),cv.height-34);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#b91c1c';ctx.font='bold 11px sans-serif';ctx.fillText('Ellbogen (k=3)',gx(3)+6,gy(results[2].w)-6);
+  }
+  function drawPlot(k){
+    const r=results[k-1]; const g=mapper(pcv,bounds(raw),24);
+    axes(pctx,g);
+    r.pts.forEach(p=>{ const c=r.cs[p.c];
+      pctx.strokeStyle=PAL[p.c]+'99';pctx.lineWidth=1;pctx.beginPath();pctx.moveTo(g.sx(p.x),g.sy(p.y));pctx.lineTo(g.sx(c.x),g.sy(c.y));pctx.stroke(); });
+    r.pts.forEach(p=>{ pctx.fillStyle=PAL[p.c];pctx.beginPath();pctx.arc(g.sx(p.x),g.sy(p.y),3.5,0,7);pctx.fill(); });
+    r.cs.forEach((c,i)=>{ pctx.strokeStyle=PAL[i];pctx.lineWidth=3;
+      pctx.beginPath();pctx.moveTo(g.sx(c.x)-6,g.sy(c.y)-6);pctx.lineTo(g.sx(c.x)+6,g.sy(c.y)+6);
+      pctx.moveTo(g.sx(c.x)+6,g.sy(c.y)-6);pctx.lineTo(g.sx(c.x)-6,g.sy(c.y)+6);pctx.stroke(); });
+  }
+  function upd(){ const k=parseInt(kEl.value); kV.textContent=k; drawElbow(k); drawPlot(k);
+    out.textContent='k = '+k+'\nWCSS = '+fmt(results[k-1].w,1)+'\nDistanzenplot rechts: Linien = Abstände zum Zentrum.'; }
+  cv.addEventListener('click',e=>{ const r=cv.getBoundingClientRect(); const px=(e.clientX-r.left)*(cv.width/r.width);
+    let bestK=1,bd=1e9; for(let k=1;k<=KMAX;k++){ const d=Math.abs(gx(k)-px); if(d<bd){bd=d;bestK=k;} } kEl.value=bestK; upd(); });
+  kEl.oninput=upd; upd();
+})();
+
+/* =====================================================================
+   7 · Silhouettenanalyse
+===================================================================== */
+function silhouettes(pts){
+  const K=Math.max(...pts.map(p=>p.c))+1;
+  const groups=Array.from({length:K},()=>[]); pts.forEach(p=>groups[p.c].push(p));
+  return pts.map(p=>{
+    const own=groups[p.c];
+    let a=0; if(own.length>1){ for(const q of own) if(q!==p) a+=eu(p,q); a/=(own.length-1); }
+    let b=Infinity;
+    for(let i=0;i<K;i++){ if(i===p.c||groups[i].length===0)continue; let m=0; for(const q of groups[i]) m+=eu(p,q); m/=groups[i].length; b=Math.min(b,m); }
+    if(!isFinite(b)) return 0;
+    return (b-a)/Math.max(a,b);
+  });
+}
+(function(){
+  const scv=document.getElementById('silScatter'), sctx=scv.getContext('2d');
+  const bcv=document.getElementById('silBars'), bctx=bcv.getContext('2d');
+  const kEl=document.getElementById('silK'), kV=document.getElementById('silKv'), out=document.getElementById('silOut');
+  const raw=dsFische(); const rnd=LCG(99);
+  function upd(){
+    const k=parseInt(kEl.value); kV.textContent=k;
+    const r=kmeansBest(raw,k,8,rnd); const sil=silhouettes(r.pts);
+    const g=mapper(scv,bounds(raw),22); axes(sctx,g);
+    r.pts.forEach(p=>{ sctx.fillStyle=PAL[p.c];sctx.beginPath();sctx.arc(g.sx(p.x),g.sy(p.y),4,0,7);sctx.fill(); });
+    r.cs.forEach((c,i)=>{ sctx.strokeStyle=PAL[i];sctx.lineWidth=3;
+      sctx.beginPath();sctx.moveTo(g.sx(c.x)-6,g.sy(c.y)-6);sctx.lineTo(g.sx(c.x)+6,g.sy(c.y)+6);
+      sctx.moveTo(g.sx(c.x)+6,g.sy(c.y)-6);sctx.lineTo(g.sx(c.x)-6,g.sy(c.y)+6);sctx.stroke(); });
+    // bars sorted within cluster
+    const idx=[...r.pts.keys()].sort((i,j)=> r.pts[i].c-r.pts[j].c || sil[j]-sil[i]);
+    bctx.clearRect(0,0,bcv.width,bcv.height);
+    const W=bcv.width,H=bcv.height,x0=88,midY=8; const bh=(H-16)/idx.length;
+    bctx.strokeStyle='#cbd5e1';bctx.beginPath();bctx.moveTo(x0,4);bctx.lineTo(x0,H-4);bctx.stroke();
+    bctx.font='9px sans-serif';bctx.fillStyle='#64748b';bctx.fillText('0',x0-3,H-4);bctx.fillText('1',W-12,H-4);bctx.fillText('−1',2,H-4);
+    let mean=0;
+    idx.forEach((pi,row)=>{ const s=sil[pi]; mean+=s; const y=midY+row*bh;
+      const len=(Math.abs(s))*(W-x0-14); bctx.fillStyle=PAL[r.pts[pi].c];
+      if(s>=0) bctx.fillRect(x0,y,len,bh-1); else bctx.fillRect(x0-len,y,len,bh-1); });
+    mean/=sil.length;
+    out.textContent='k = '+k+'\nØ Silhouette = '+fmt(mean,2)+'\n'+(k===3?'✓ hohe, gleichmäßige Werte':(k<3?'Werte niedriger/ungleich':'viele niedrige/negative Werte'));
+  }
+  kEl.oninput=upd; upd();
+})();
+
+/* =====================================================================
+   10 · Farbreduktion
+===================================================================== */
+(function(){
+  const oc=document.getElementById('imgOrig'), octx=oc.getContext('2d');
+  const rc=document.getElementById('imgRed'), rctx=rc.getContext('2d');
+  const kEl=document.getElementById('imgK'), kV=document.getElementById('imgKv'), out=document.getElementById('imgOut');
+  const pal=document.getElementById('palette');
+  function sample(){
+    // farbenfrohes Beispielbild zeichnen
+    const g1=octx.createLinearGradient(0,0,oc.width,oc.height);
+    g1.addColorStop(0,'#1d4ed8');g1.addColorStop(.5,'#0d9488');g1.addColorStop(1,'#f59e0b');
+    octx.fillStyle=g1;octx.fillRect(0,0,oc.width,oc.height);
+    octx.fillStyle='#dc2626';octx.beginPath();octx.arc(60,60,34,0,7);octx.fill();
+    octx.fillStyle='#facc15';octx.beginPath();octx.arc(165,120,30,0,7);octx.fill();
+    octx.fillStyle='#7c3aed';octx.fillRect(120,20,60,40);
+    octx.fillStyle='#ffffff';octx.beginPath();octx.moveTo(20,160);octx.lineTo(70,110);octx.lineTo(120,160);octx.fill();
+  }
+  function reduce(){
+    const k=parseInt(kEl.value); kV.textContent=k;
+    const img=octx.getImageData(0,0,oc.width,oc.height); const d=img.data;
+    // sample pixels for speed
+    const pts=[]; for(let i=0;i<d.length;i+=4) pts.push({x:d[i],y:d[i+1],z:d[i+2]});
+    // k-means on RGB
+    const rnd=LCG(123); let cs=[]; const used=new Set();
+    for(let i=0;i<k;i++){ let idx; do{ idx=Math.floor(rnd()*pts.length);}while(used.has(idx)&&used.size<pts.length); used.add(idx);
+      cs.push({x:pts[idx].x,y:pts[idx].y,z:pts[idx].z}); }
+    const lab=new Int32Array(pts.length).fill(-1);
+    for(let it=0;it<12;it++){ let ch=false;
+      for(let p=0;p<pts.length;p++){ let best=0,bd=Infinity;
+        for(let i=0;i<k;i++){ const dx=pts[p].x-cs[i].x,dy=pts[p].y-cs[i].y,dz=pts[p].z-cs[i].z,dd=dx*dx+dy*dy+dz*dz; if(dd<bd){bd=dd;best=i;} }
+        if(lab[p]!==best){lab[p]=best;ch=true;} }
+      const sx=new Float64Array(k),sy=new Float64Array(k),sz=new Float64Array(k),n=new Int32Array(k);
+      for(let p=0;p<pts.length;p++){ const c=lab[p];sx[c]+=pts[p].x;sy[c]+=pts[p].y;sz[c]+=pts[p].z;n[c]++; }
+      for(let i=0;i<k;i++) if(n[i]>0){cs[i]={x:sx[i]/n[i],y:sy[i]/n[i],z:sz[i]/n[i]};}
+      if(!ch) break;
+    }
+    const o2=rctx.createImageData(rc.width,rc.height); const d2=o2.data;
+    for(let p=0,i=0;p<pts.length;p++,i+=4){ const c=cs[lab[p]]; d2[i]=c.x|0;d2[i+1]=c.y|0;d2[i+2]=c.z|0;d2[i+3]=255; }
+    rctx.putImageData(o2,0,0);
+    pal.innerHTML=cs.map(c=>'<span title="rgb('+(c.x|0)+','+(c.y|0)+','+(c.z|0)+')" style="width:26px;height:26px;border-radius:5px;border:1px solid #cbd5e1;display:inline-block;background:rgb('+(c.x|0)+','+(c.y|0)+','+(c.z|0)+')"></span>').join('');
+    out.textContent='Bild auf '+k+' Farben reduziert.\nJedes Farbfeld = ein Cluster-Zentrum im RGB-Raum.';
+  }
+  document.getElementById('imgRun').onclick=reduce;
+  document.getElementById('imgSample').onclick=()=>{ sample(); rctx.clearRect(0,0,rc.width,rc.height); pal.innerHTML=''; out.textContent='Beispielbild geladen. Klicke „Farbreduktion berechnen".'; };
+  document.getElementById('imgFile').onchange=function(e){ const f=e.target.files[0]; if(!f)return; const img=new Image();
+    img.onload=()=>{ octx.clearRect(0,0,oc.width,oc.height); const s=Math.min(oc.width/img.width,oc.height/img.height);
+      const w=img.width*s,h=img.height*s; octx.drawImage(img,(oc.width-w)/2,(oc.height-h)/2,w,h); rctx.clearRect(0,0,rc.width,rc.height); pal.innerHTML=''; out.textContent='Eigenes Bild geladen. Klicke „Farbreduktion berechnen".'; };
+    img.src=URL.createObjectURL(f); };
+  kEl.oninput=()=>{ kV.textContent=kEl.value; };
+  sample(); out.textContent='Beispielbild geladen. Klicke „Farbreduktion berechnen".';
+})();
+
+/* =====================================================================
+   Aufgaben: Lösung erst nach Teil-Eingabe freischalten
+===================================================================== */
+document.querySelectorAll('.ex').forEach(ex=>{
+  const min=parseInt(ex.dataset.min||'12');
+  const fields=ex.querySelectorAll('textarea, input.num');
+  const btn=ex.querySelector('.reveal'); const sol=ex.querySelector('.solution');
+  if(!btn||!sol) return;
+  function progress(){ let t=0; fields.forEach(f=>t+=(f.value||'').trim().length); return t; }
+  function check(){ btn.disabled = progress() < min; }
+  fields.forEach(f=>f.addEventListener('input',check));
+  btn.addEventListener('click',()=>{ sol.hidden=false; btn.style.display='none'; });
+  check();
+});
+</script>
+</body>
+</html>
